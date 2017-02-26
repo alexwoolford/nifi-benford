@@ -36,30 +36,39 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 @Tags({"Benfords Law", "fraud detection"})
-@CapabilityDescription("Takes an input stream of text, typically the output from a document, and uses Benford's Law to classify the document as fraud/not fraud.")
+@CapabilityDescription("Takes an input stream of text, typically the output from a document, and uses Benford's Law to classify the document as conforming or non-conforming.")
 @SeeAlso({})
 @ReadsAttributes({@ReadsAttribute(attribute="", description="")})
 @WritesAttributes({@WritesAttribute(attribute="", description="")})
-public class BenfordsLawProcessor extends AbstractProcessor {
+public class BenfordsLaw extends AbstractProcessor {
 
     public static final PropertyDescriptor ALPHA = new PropertyDescriptor
             .Builder().name("alpha")
-            .description("This is the significance level at which we reject the null hypothesis and flag the input document as suspect.")
+            .description("This is the significance level at which documents will be classified as conforming or non-conforming.")
             .required(true)
             .defaultValue("0.05")
             .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
-    public static final Relationship SUSPECT = new Relationship.Builder()
-            .name("SUSPECT")
-            .description("Suspect relationship")
+    public static final PropertyDescriptor MIN_SAMPLE = new PropertyDescriptor
+            .Builder().name("min-sample")
+            .description("This is the minimum number of numerical values to perform a Chi-squared test.")
+            .required(true)
+            .defaultValue("5")
+            .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
             .build();
 
-    public static final Relationship NOT_SUSPECT = new Relationship.Builder()
-            .name("NOT_SUSPECT")
-            .description("Not suspect relationship")
+    public static final Relationship NON_CONFORMING = new Relationship.Builder()
+            .name("NON_CONFORMING")
+            .description("Non-conforming relationship")
+            .build();
+
+    public static final Relationship CONFORMING = new Relationship.Builder()
+            .name("CONFORMING")
+            .description("Conforming relationship")
             .build();
 
     public static final Relationship INSUFFICIENT_SAMPLE = new Relationship.Builder()
@@ -75,11 +84,13 @@ public class BenfordsLawProcessor extends AbstractProcessor {
     protected void init(final ProcessorInitializationContext context) {
         final List<PropertyDescriptor> descriptors = new ArrayList<PropertyDescriptor>();
         descriptors.add(ALPHA);
+        descriptors.add(MIN_SAMPLE);
         this.descriptors = Collections.unmodifiableList(descriptors);
 
         final Set<Relationship> relationships = new HashSet<Relationship>();
-        relationships.add(SUSPECT);
-        relationships.add(NOT_SUSPECT);
+        relationships.add(NON_CONFORMING);
+        relationships.add(CONFORMING);
+        relationships.add(INSUFFICIENT_SAMPLE);
         this.relationships = Collections.unmodifiableSet(relationships);
     }
 
@@ -109,19 +120,23 @@ public class BenfordsLawProcessor extends AbstractProcessor {
         String input = new BufferedReader(new InputStreamReader(inputStream))
                 .lines().collect(Collectors.joining("\n"));
 
+        // TODO: since the values returned by Benford's array don't ever change, these could be hard-coded rather than calling a function each time.
         double[] benfordsArray = getBenfordsArray();
         long[] firstDigitArray = getFirstDigitArray(input);
+
+        long sampleSize = LongStream.of(firstDigitArray).sum();
 
         ChiSquareTest chiSquareTest = new ChiSquareTest();
         Boolean suspect = chiSquareTest.chiSquareTest(benfordsArray, firstDigitArray, context.getProperty(ALPHA).asDouble());
 
-        if (suspect){
-            session.transfer(flowFile, SUSPECT);
+        //TODO: don't perform the chi-squared test if the sample is too small
+        if (sampleSize < context.getProperty(MIN_SAMPLE).asLong()){
+            session.transfer(flowFile, INSUFFICIENT_SAMPLE);
+        } else if (suspect){
+            session.transfer(flowFile, NON_CONFORMING);
         } else {
-            session.transfer(flowFile, NOT_SUSPECT);
+            session.transfer(flowFile, CONFORMING);
         }
-
-//        session.transfer(flowFile, INSUFFICIENT_SAMPLE);
 
     }
 

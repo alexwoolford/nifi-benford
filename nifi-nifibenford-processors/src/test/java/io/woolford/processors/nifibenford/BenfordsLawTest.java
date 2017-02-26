@@ -22,13 +22,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class BenfordsLawProcessorTest {
+public class BenfordsLawTest {
 
     private TestRunner testRunner;
 
     @Before
     public void init() {
-        testRunner = TestRunners.newTestRunner(BenfordsLawProcessor.class);
+        testRunner = TestRunners.newTestRunner(BenfordsLaw.class);
     }
 
     @Test

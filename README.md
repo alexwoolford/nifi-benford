@@ -17,3 +17,4 @@ Build the processor .nar file (presumably `.nar` stands for Nifi ARchive):
 Then copy the .nar file in `nifi-benford/nifi-nifibenford-nar/target/nifi-nifibenford-nar-1.0.nar` to the Nifi lib folder (which, in my case is `/usr/hdf/2.1.0.0-165/nifi/lib/`), and restart Nifi.
 
 
+[![Benford's Law Nifi processor](https://img.youtube.com/vi/xIGybxBmKpk/0.jpg)](https://www.youtube.com/watch?v=xIGybxBmKpk)

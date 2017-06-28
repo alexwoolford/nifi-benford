@@ -11,7 +11,7 @@ The Chi-squared test is used to compare the distribution of values of the first 
 
 Build the processor .nar file (presumably `.nar` stands for Nifi ARchive):
 
-    nifi-benford
+    cd nifi-benford
     mvn clean package
 
 Then copy the .nar file in `nifi-benford/nifi-nifibenford-nar/target/nifi-nifibenford-nar-1.0.nar` to the Nifi lib folder (which, in my case is `/usr/hdf/2.1.0.0-165/nifi/lib/`), and restart Nifi.
